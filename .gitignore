@@ -1,5 +1,7 @@
-# Auto-backup profiles (contains sensitive tokens)
-profiles/_auto_*/
+# Profile data (contains auth tokens, sessions, personal data)
+profiles/
+
+# Runtime state
 state.json
 
 # Python
