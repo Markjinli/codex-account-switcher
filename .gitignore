@@ -1,0 +1,7 @@
+# Auto-backup profiles (contains sensitive tokens)
+profiles/_auto_*/
+state.json
+
+# Python
+__pycache__/
+*.py[cod]
