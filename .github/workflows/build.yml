@@ -48,7 +48,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install flet[all] pyinstaller
+          pip install flet[all] pyinstaller pillow
 
       - name: Build .app
         run: |
