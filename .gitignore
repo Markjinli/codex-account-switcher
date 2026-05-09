@@ -4,6 +4,16 @@ profiles/
 # Runtime state
 state.json
 
+# Build artifacts
+build/
+dist/
+*.spec
+
 # Python
 __pycache__/
 *.py[cod]
+
+# Design exports (but keep assets/)
+*.png
+!assets/*.png
+codex-original.*

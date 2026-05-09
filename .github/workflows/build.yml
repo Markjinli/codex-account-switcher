@@ -1,0 +1,100 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # ── Windows .exe ──────────────────────────────────────────────────────
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install flet[all] pyinstaller
+
+      - name: Build exe
+        run: |
+          flet pack gui/main.py `
+            --name "Codex-Account-Switcher" `
+            --icon assets/icon.ico `
+            --product-name "Codex Account Switcher" `
+            --file-description "Switch between Codex CLI accounts" `
+            --company-name "Markjinli" `
+            --product-version "${{ github.ref_name }}"
+
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: Codex-Account-Switcher-Windows
+          path: dist/Codex-Account-Switcher.exe
+
+  # ── macOS .dmg ────────────────────────────────────────────────────────
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install flet[all] pyinstaller
+
+      - name: Build .app
+        run: |
+          flet pack gui/main.py \
+            --name "Codex Account Switcher" \
+            --icon assets/icon.png \
+            --product-name "Codex Account Switcher" \
+            --file-description "Switch between Codex CLI accounts" \
+            --company-name "Markjinli" \
+            --bundle-id com.markjinli.codex-switcher \
+            --product-version "${{ github.ref_name }}"
+
+      - name: Create .dmg
+        run: |
+          APP="dist/Codex Account Switcher.app"
+          DMG="dist/Codex-Account-Switcher-macOS.dmg"
+          mkdir -p dist/dmg
+          cp -R "$APP" dist/dmg/
+          ln -s /Applications dist/dmg/Applications
+          hdiutil create -volname "Codex Account Switcher" \
+            -srcfolder dist/dmg -ov -format UDZO "$DMG"
+
+      - name: Upload dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: Codex-Account-Switcher-macOS
+          path: dist/Codex-Account-Switcher-macOS.dmg
+
+  # ── Release ───────────────────────────────────────────────────────────
+  release:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Codex-Account-Switcher-*
+          merge-multiple: true
+          path: dist
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Codex Account Switcher ${{ github.ref_name }}"
+          files: dist/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
