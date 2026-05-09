@@ -114,17 +114,27 @@ def rmtree_force(path: Path):
     shutil.rmtree(str(path), onerror=_remove_readonly, ignore_errors=True)
 
 
+# Directories that are safe to skip — cached or derived data that Codex
+# rebuilds automatically.  Skipping these avoids Windows file-lock issues
+# with read-only .git pack files inside vendor_imports.
+SKIP_DIRS = {".tmp", ".sandbox-secrets", ".sandbox", "vendor_imports", "tmp"}
+
+
 def copy_codex_tree(src: Path, dst: Path):
     """Replace dst contents with a clean copy of src.
 
-    Copies src to a temp directory then moves children into dst one-by-one.
-    This avoids Windows directory-replace races and handles locked files.
+    Copies src to a temp directory, then moves children into dst one-by-one.
+    Directories in SKIP_DIRS are excluded — they contain cache/derived data
+    that Codex regenerates on next launch.
     """
     tmp = dst.with_name(dst.name + ".tmp-" + str(int(time.time() * 1000)))
+
+    def _ignore(root, names):
+        return [n for n in names if n in SKIP_DIRS]
+
     rmtree_force(tmp)
     shutil.copytree(str(src), str(tmp), symlinks=False,
-                    ignore_dangling_symlinks=True,
-                    ignore=shutil.ignore_patterns(".tmp", ".sandbox-secrets"))
+                    ignore_dangling_symlinks=True, ignore=_ignore)
 
     dst.mkdir(parents=True, exist_ok=True)
     for child in tmp.iterdir():
@@ -135,7 +145,8 @@ def copy_codex_tree(src: Path, dst: Path):
         except OSError:
             if child.is_dir():
                 shutil.copytree(str(child), str(target), symlinks=False,
-                                ignore_dangling_symlinks=True, dirs_exist_ok=True)
+                                ignore_dangling_symlinks=True, dirs_exist_ok=True,
+                                ignore=_ignore)
             else:
                 shutil.copy2(str(child), str(target))
             rmtree_force(child)
