@@ -32,7 +32,7 @@ def _ak(n, s=34, fs=13):
         content=ft.Text(n[0].upper(), size=fs, weight="w700",
                         color=C["text_inv"], text_align="center"),
         width=s, height=s, border_radius=9999,
-        bgcolor=C["card_dark"], alignment=ft.alignment.center,
+        bgcolor=C["card_dark"], alignment=ft.alignment.Alignment.CENTER,
     )
 
 
@@ -72,7 +72,7 @@ class App:
             border_radius=12,
             bgcolor=C["card_light"],
             border_color=ft.Colors.TRANSPARENT,
-            content_padding=ft.padding.symmetric(horizontal=14, vertical=10),
+            content_padding=ft.padding.Padding.symmetric(horizontal=14, vertical=10),
             text_size=13,
             autofocus=True,
             on_submit=self._on_save_confirm,
@@ -113,7 +113,7 @@ class App:
             ft.Container(
                 content=ft.Text("C", size=18, weight="w700", color=C["text_inv"], text_align="center"),
                 width=38, height=38, border_radius=12, bgcolor=C["card_dark"],
-                alignment=ft.alignment.center,
+                alignment=ft.alignment.Alignment.CENTER,
             ),
             ft.Column([
                 ft.Text("Codex Account Switcher", size=18, weight="w700", color=C["text"]),
@@ -129,13 +129,13 @@ class App:
                     self.current_email_txt,
                     self.current_profile_txt,
                 ], spacing=2, expand=True),
-                ft.ElevatedButton(
-                    text="Save", icon=ft.Icons.SAVE_OUTLINED,
+                ft.FilledButton(
+                    "Save", icon=ft.Icons.SAVE_OUTLINED,
                     on_click=self._on_save,
                     style=ft.ButtonStyle(
                         bgcolor=C["accent"], color=C["text_inv"],
                         shape=ft.RoundedRectangleBorder(radius=8),
-                        padding=ft.padding.symmetric(horizontal=14, vertical=8),
+                        padding=ft.padding.Padding.symmetric(horizontal=14, vertical=8),
                     ),
                     height=34,
                 ),
@@ -150,7 +150,7 @@ class App:
                 ft.Text("Add New Account", size=12, weight="w500", color=C["text_sec"]),
             ], spacing=6, alignment=ft.MainAxisAlignment.CENTER),
             height=40, border_radius=12, bgcolor=C["card_light"],
-            alignment=ft.alignment.center,
+            alignment=ft.alignment.Alignment.CENTER,
             on_click=self._on_add_account, visible=False,
         )
 
@@ -179,7 +179,7 @@ class App:
                     ft.Divider(height=8, color=ft.Colors.TRANSPARENT),
                     footer,
                 ], spacing=6, scroll=ft.ScrollMode.AUTO),
-                padding=ft.padding.symmetric(horizontal=28, vertical=24),
+                padding=ft.padding.Padding.symmetric(horizontal=28, vertical=24),
                 expand=True,
             ),
         )
@@ -215,7 +215,7 @@ class App:
         self.add_btn.update()
 
     def _build_profile_card(self, name, email, is_current):
-        border = ft.border.all(1.5, C["accent"]) if is_current else None
+        border = ft.border.Border.all(1.5, C["accent"]) if is_current else None
         return ft.Container(
             content=ft.Row([
                 _ak(name, 34, 13),
@@ -236,7 +236,7 @@ class App:
                     on_click=lambda e, n=name: self._on_delete_ask(n),
                 ),
             ], spacing=10, alignment=ft.MainAxisAlignment.CENTER),
-            padding=ft.padding.symmetric(horizontal=16, vertical=12),
+            padding=ft.padding.Padding.symmetric(horizontal=16, vertical=12),
             border_radius=12, bgcolor=C["card_light"], border=border,
         )
 
@@ -294,4 +294,4 @@ class App:
 
 
 if __name__ == "__main__":
-    ft.run(target=lambda page: App(page))  # Flet >= 0.80
+    ft.run(lambda page: App(page))
