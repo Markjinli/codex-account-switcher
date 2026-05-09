@@ -84,7 +84,7 @@ class App:
                 self.save_field,
             ], spacing=14, height=100),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.page.close(self.save_dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog()),
                 ft.FilledButton("Save Profile", on_click=self._on_save_confirm,
                                 style=ft.ButtonStyle(bgcolor=C["accent"], color=C["text_inv"])),
             ],
@@ -98,7 +98,7 @@ class App:
             title=ft.Text("Delete Profile", size=18, weight="w700"),
             content=ft.Text("Are you sure? This cannot be undone.", size=13, color=C["text_muted"]),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.page.close(self.del_dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog()),
                 ft.FilledButton("Delete", on_click=self._on_delete_confirm,
                                 style=ft.ButtonStyle(bgcolor=C["danger"], color=C["text_inv"])),
             ],
@@ -246,13 +246,13 @@ class App:
             self._snack("No account to save. Run 'codex login' first.", C["danger"])
             return
         self.save_field.value = self._current_email
-        self.page.open(self.save_dlg)
+        self.page.show_dialog(self.save_dlg)
 
     def _on_save_confirm(self, e):
         name = self.save_field.value.strip() or self._current_email
         try:
             save_profile(name)
-            self.page.close(self.save_dlg)
+            self.page.pop_dialog(self.save_dlg)
             self._snack(f"Profile '{name}' saved.")
             self.refresh()
         except Exception as ex:
@@ -268,14 +268,14 @@ class App:
 
     def _on_delete_ask(self, name):
         self._del_target = name
-        self.page.open(self.del_dlg)
+        self.page.show_dialog(self.del_dlg)
 
     def _on_delete_confirm(self, e):
         name = self._del_target
         if name:
             try:
                 delete_profile(name)
-                self.page.close(self.del_dlg)
+                self.page.pop_dialog(self.del_dlg)
                 self._snack(f"Profile '{name}' deleted.")
                 self.refresh()
             except Exception as ex:
@@ -290,7 +290,7 @@ class App:
             self._snack(f"Error: {ex}", C["danger"])
 
     def _snack(self, msg, bgcolor=None):
-        self.page.open(ft.SnackBar(ft.Text(msg), bgcolor=bgcolor or C["accent"]))
+        self.page.show_dialog(ft.SnackBar(ft.Text(msg), bgcolor=bgcolor or C["accent"]))
 
 
 if __name__ == "__main__":
