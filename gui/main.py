@@ -7,8 +7,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import flet as ft
 from gui.core import (
-    get_current, list_profiles, save_profile,
-    switch_profile, delete_profile, logout,
+    get_current, is_codex_running, list_profiles,
+    save_profile, switch_profile, delete_profile, logout,
 )
 
 REPO_URL = "https://github.com/Markjinli/codex-account-switcher"
@@ -101,6 +101,30 @@ class App:
                 ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog()),
                 ft.FilledButton("Delete", on_click=self._on_delete_confirm,
                                 style=ft.ButtonStyle(bgcolor=C["danger"], color=C["text_inv"])),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            shape=ft.RoundedRectangleBorder(radius=16),
+        )
+
+        # switch confirm (when Codex is running)
+        self._switch_target = None
+        self.switch_dlg = ft.AlertDialog(
+            title=ft.Text("Switch Account", size=18, weight="w700"),
+            content=ft.Column([
+                ft.Text(
+                    "Codex is currently running. Switching accounts will stop all "
+                    "Codex processes before proceeding.",
+                    size=13, color=C["text_muted"],
+                ),
+                ft.Text(
+                    "Are you sure you want to continue?",
+                    size=13, weight="w600", color=C["text"],
+                ),
+            ], spacing=10),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog()),
+                ft.FilledButton("Switch Anyway", on_click=self._on_switch_confirm,
+                                style=ft.ButtonStyle(bgcolor=C["accent"], color=C["text_inv"])),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
             shape=ft.RoundedRectangleBorder(radius=16),
@@ -259,12 +283,24 @@ class App:
             self._snack(f"Error: {ex}", C["danger"])
 
     def _on_switch(self, name):
+        if is_codex_running():
+            self._switch_target = name
+            self.page.show_dialog(self.switch_dlg)
+        else:
+            self._do_switch(name)
+
+    def _do_switch(self, name):
         try:
             new_email = switch_profile(name)
             self._snack(f"Switched to {new_email}")
             self.refresh()
         except Exception as ex:
             self._snack(f"Error: {ex}", C["danger"])
+
+    def _on_switch_confirm(self, e):
+        self.page.pop_dialog()
+        self._do_switch(self._switch_target)
+        self._switch_target = None
 
     def _on_delete_ask(self, name):
         self._del_target = name
