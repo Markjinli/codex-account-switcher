@@ -3,6 +3,7 @@
 
 import sys
 import locale
+import asyncio
 import traceback
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -124,6 +125,7 @@ class App:
         page.bgcolor = C["bg"]
         page.theme_mode = ft.ThemeMode.LIGHT
 
+        self._switch_loading_name = None
         self.current_avatar = _ak("?", 42, 16)
         self.current_email_txt = ft.Text("", size=14, weight="w600", color=C["text_inv"])
         self.current_profile_txt = ft.Text("", size=11, color="#999999")
@@ -326,6 +328,12 @@ class App:
         self.current_card.visible = True
         self.current_card.update()
 
+        self._refresh_profiles()
+
+        self.add_btn.visible = True
+        self.add_btn.update()
+
+    def _refresh_profiles(self):
         self.profiles_col.controls.clear()
         for name, em in list_profiles():
             is_cur = (em == self._current_email)
@@ -333,11 +341,19 @@ class App:
             self.profiles_col.controls.append(card)
         self.profiles_col.update()
 
-        self.add_btn.visible = True
-        self.add_btn.update()
-
     def _build_profile_card(self, name, email, is_current):
         border = ft.border.Border.all(1.5, C["accent"]) if is_current else None
+        is_loading = (name == self._switch_loading_name)
+        switch_btn = (
+            ft.ProgressRing(width=16, height=16, stroke_width=2, color=C["accent"])
+            if is_loading else
+            ft.IconButton(
+                icon=ft.Icons.ARROW_FORWARD_IOS,
+                icon_size=14, icon_color=C["accent"],
+                tooltip=T("switch_tooltip"),
+                on_click=lambda e, n=name: self._on_switch(n),
+            )
+        )
         return ft.Container(
             content=ft.Row([
                 _ak(name, 34, 13),
@@ -345,12 +361,7 @@ class App:
                     ft.Text(name, size=13, weight="w600", color=C["text"]),
                     ft.Text(email, size=10, color=C["text_muted"]),
                 ], spacing=2, expand=True),
-                ft.IconButton(
-                    icon=ft.Icons.ARROW_FORWARD_IOS,
-                    icon_size=14, icon_color=C["accent"],
-                    tooltip=T("switch_tooltip"),
-                    on_click=lambda e, n=name: self._on_switch(n),
-                ),
+                switch_btn,
                 ft.IconButton(
                     icon=ft.Icons.CLOSE,
                     icon_size=12, icon_color=C["text_muted"],
@@ -390,21 +401,25 @@ class App:
             self._switch_target = name
             self.page.show_dialog(self.switch_dlg)
         else:
-            self._do_switch(name)
+            self.page.run_task(self._do_switch_async, name)
 
-    def _do_switch(self, name):
+    async def _do_switch_async(self, name):
+        self._switch_loading_name = name
+        self._refresh_profiles()
         try:
-            new_email = switch_profile(name)
+            new_email = await asyncio.to_thread(switch_profile, name)
             self._snack(T("snack_switched", email=new_email or "unknown"))
-            self.refresh()
         except Exception as ex:
             tb = traceback.format_exc()
             print(tb, file=sys.stderr)
             self._snack(T("snack_error", msg=str(ex)), C["danger"])
+        finally:
+            self._switch_loading_name = None
+            self.refresh()
 
     def _on_switch_confirm(self, e):
         self.page.pop_dialog()
-        self._do_switch(self._switch_target)
+        self.page.run_task(self._do_switch_async, self._switch_target)
         self._switch_target = None
 
     def _on_delete_ask(self, name):

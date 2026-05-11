@@ -18,6 +18,14 @@ STATE_FILE = SWITCHER_DIR / "state.json"
 
 SKIP_DIRS = {".tmp", ".sandbox-secrets", ".sandbox", "vendor_imports", "tmp"}
 
+# Windows: prevent subprocess from spawning CMD windows
+_SUB_CFG = {}
+if sys.platform == "win32":
+    try:
+        _SUB_CFG["creationflags"] = subprocess.CREATE_NO_WINDOW
+    except AttributeError:
+        _SUB_CFG["creationflags"] = 0x08000000
+
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -66,10 +74,10 @@ def get_account_info(codex_dir=CODEX_DIR):
 def is_codex_running():
     try:
         if sys.platform == "win32":
-            result = subprocess.run(["tasklist", "/NH"], capture_output=True, text=True)
+            result = subprocess.run(["tasklist", "/NH"], capture_output=True, text=True, **_SUB_CFG)
             return "codex" in result.stdout.lower()
         else:
-            result = subprocess.run(["pgrep", "-i", "-x", "codex"], capture_output=True, text=True)
+            result = subprocess.run(["pgrep", "-i", "-x", "codex"], capture_output=True, text=True, **_SUB_CFG)
             return result.returncode == 0
     except Exception:
         return False
@@ -79,11 +87,11 @@ def kill_codex():
     try:
         if sys.platform == "win32":
             subprocess.run(["taskkill", "/F", "/FI", "IMAGENAME eq Codex Proxy.exe"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, **_SUB_CFG)
             subprocess.run(["taskkill", "/F", "/FI", "IMAGENAME eq codex.exe"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, **_SUB_CFG)
         else:
-            subprocess.run(["pkill", "-9", "-i", "codex"], capture_output=True, text=True)
+            subprocess.run(["pkill", "-9", "-i", "codex"], capture_output=True, text=True, **_SUB_CFG)
     except Exception:
         pass
 
