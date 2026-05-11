@@ -2,6 +2,7 @@
 """Codex Account Switcher — cross-platform GUI (Flet)."""
 
 import sys
+import locale
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -25,6 +26,79 @@ C = {
     "danger":      "#E05555",
 }
 
+# ── i18n ───────────────────────────────────────────────────────────────
+def _detect_lang():
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            lid = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+            if lid in (0x0804, 0x0404, 0x0c04, 0x1004):
+                return "zh"
+        except Exception:
+            pass
+    try:
+        loc = locale.getdefaultlocale()[0] or ""
+        if loc.startswith("zh"):
+            return "zh"
+    except Exception:
+        pass
+    return "en"
+
+LANG = _detect_lang()
+
+STR = {
+    "title":              {"en": "Codex Account Switcher",            "zh": "Codex 账号切换器"},
+    "subtitle":           {"en": "Manage and switch between accounts","zh": "管理和切换 Codex 账号"},
+    "current_account":    {"en": "Current Account",                   "zh": "当前账号"},
+    "saved_profiles":     {"en": "Saved Profiles",                    "zh": "已保存的账号"},
+    "save_btn":           {"en": "Save",                              "zh": "保存"},
+    "add_account":        {"en": "Add New Account",                   "zh": "添加新账号"},
+    "save_field_hint":    {"en": "Enter profile name (default: email)","zh": "输入配置名称（默认为邮箱）"},
+    "save_dlg_title":     {"en": "Save Current Account",              "zh": "保存当前账号"},
+    "save_dlg_desc":      {"en": "Enter a name for this account profile.","zh": "为这个账号配置起一个名称。"},
+    "save_dlg_cancel":    {"en": "Cancel",                            "zh": "取消"},
+    "save_dlg_confirm":   {"en": "Save Profile",                      "zh": "保存"},
+    "delete_dlg_title":   {"en": "Delete Profile",                    "zh": "删除配置"},
+    "delete_dlg_desc":    {"en": "Are you sure? This cannot be undone.","zh": "确定删除吗？此操作无法撤销。"},
+    "delete_dlg_cancel":  {"en": "Cancel",                            "zh": "取消"},
+    "delete_dlg_confirm": {"en": "Delete",                            "zh": "删除"},
+    "switch_dlg_title":   {"en": "Switch Account",                    "zh": "切换账号"},
+    "switch_dlg_desc":    {"en": "Codex is currently running. Switching accounts will stop all Codex processes before proceeding.",
+                           "zh": "Codex 当前正在运行，切换账号前将结束所有 Codex 进程。"},
+    "switch_dlg_confirm_ask": {"en": "Are you sure you want to continue?","zh": "确定要继续吗？"},
+    "switch_dlg_cancel":  {"en": "Cancel",                            "zh": "取消"},
+    "switch_dlg_confirm": {"en": "Switch Anyway",                     "zh": "确认切换"},
+    "logout_dlg_title":   {"en": "Add New Account",                   "zh": "添加新账号"},
+    "logout_dlg_desc":    {"en": "This will log you out so you can sign in with a new account.",
+                           "zh": "此操作将退出当前登录，以便你切换到新账号。"},
+    "logout_dlg_codex":   {"en": "Codex is currently running. Its processes will be stopped.",
+                           "zh": "Codex 当前正在运行，将结束其进程。"},
+    "logout_dlg_cancel":  {"en": "Cancel",                            "zh": "取消"},
+    "logout_dlg_confirm": {"en": "Log Out",                           "zh": "退出登录"},
+    "not_logged_in":      {"en": "Not logged in",                     "zh": "未登录"},
+    "not_saved":          {"en": "Not saved yet",                     "zh": "未保存"},
+    "saved_as":           {"en": "Saved as: {name}",                  "zh": "已保存为：{name}"},
+    "login_hint":         {"en": "Run 'codex login' to sign in",     "zh": "运行 codex login 登录"},
+    "switch_tooltip":     {"en": "Switch to this account",            "zh": "切换到此账号"},
+    "delete_tooltip":     {"en": "Delete profile",                    "zh": "删除此配置"},
+    "cli_label":          {"en": "CLI:",                              "zh": "命令行："},
+    "snack_no_account":   {"en": "No account to save. Run 'codex login' first.", "zh": "没有可保存的账号，请先运行 codex login 登录。"},
+    "snack_saved":        {"en": "Profile '{name}' saved.",           "zh": "配置「{name}」已保存。"},
+    "snack_switched":     {"en": "Switched to {email}",               "zh": "已切换到 {email}"},
+    "snack_deleted":      {"en": "Profile '{name}' deleted.",         "zh": "配置「{name}」已删除。"},
+    "snack_logged_out":   {"en": "Logged out. Run 'codex login' to sign in with a new account.",
+                           "zh": "已退出登录，运行 codex login 登录新账号。"},
+    "snack_duplicate":    {"en": "This account is already saved as '{name}'.", "zh": "此账号已在配置「{name}」中保存。"},
+    "snack_error":        {"en": "Error: {msg}",                      "zh": "错误：{msg}"},
+}
+
+def T(key, **kwargs):
+    entry = STR.get(key, {})
+    s = entry.get(LANG) or entry.get("en", key)
+    if kwargs:
+        s = s.format(**kwargs)
+    return s
+
 
 def _ak(n, s=34, fs=13):
     """Avatar circle with first letter of name."""
@@ -39,7 +113,7 @@ def _ak(n, s=34, fs=13):
 class App:
     def __init__(self, page: ft.Page):
         self.page = page
-        page.title = "Codex Account Switcher"
+        page.title = T("title")
         page.window.width = 440
         page.window.height = 580
         page.window.resizable = True
@@ -49,7 +123,6 @@ class App:
         page.bgcolor = C["bg"]
         page.theme_mode = ft.ThemeMode.LIGHT
 
-        # ---- dynamic widgets (rebuilt on refresh) --------------------------
         self.current_avatar = _ak("?", 42, 16)
         self.current_email_txt = ft.Text("", size=14, weight="w600", color=C["text_inv"])
         self.current_profile_txt = ft.Text("", size=11, color="#999999")
@@ -57,10 +130,7 @@ class App:
         self.profiles_col = ft.Column(spacing=6)
         self.add_btn = ft.Container(visible=False)
 
-        # ---- dialogs -------------------------------------------------------
         self._build_dialogs()
-
-        # ---- layout --------------------------------------------------------
         self._build_layout()
         self.refresh()
 
@@ -68,7 +138,7 @@ class App:
     def _build_dialogs(self):
         # save dialog
         self.save_field = ft.TextField(
-            hint_text="Enter profile name (default: email)",
+            hint_text=T("save_field_hint"),
             border_radius=12,
             bgcolor=C["card_light"],
             border_color=ft.Colors.TRANSPARENT,
@@ -78,14 +148,14 @@ class App:
             on_submit=self._on_save_confirm,
         )
         self.save_dlg = ft.AlertDialog(
-            title=ft.Text("Save Current Account", size=18, weight="w700"),
+            title=ft.Text(T("save_dlg_title"), size=18, weight="w700"),
             content=ft.Column([
-                ft.Text("Enter a name for this account profile.", size=12, color=C["text_muted"]),
+                ft.Text(T("save_dlg_desc"), size=12, color=C["text_muted"]),
                 self.save_field,
             ], spacing=14, height=100),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog()),
-                ft.FilledButton("Save Profile", on_click=self._on_save_confirm,
+                ft.TextButton(T("save_dlg_cancel"), on_click=lambda e: self.page.pop_dialog()),
+                ft.FilledButton(T("save_dlg_confirm"), on_click=self._on_save_confirm,
                                 style=ft.ButtonStyle(bgcolor=C["accent"], color=C["text_inv"])),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
@@ -95,11 +165,11 @@ class App:
         # delete confirm
         self._del_target = None
         self.del_dlg = ft.AlertDialog(
-            title=ft.Text("Delete Profile", size=18, weight="w700"),
-            content=ft.Text("Are you sure? This cannot be undone.", size=13, color=C["text_muted"]),
+            title=ft.Text(T("delete_dlg_title"), size=18, weight="w700"),
+            content=ft.Text(T("delete_dlg_desc"), size=13, color=C["text_muted"]),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog()),
-                ft.FilledButton("Delete", on_click=self._on_delete_confirm,
+                ft.TextButton(T("delete_dlg_cancel"), on_click=lambda e: self.page.pop_dialog()),
+                ft.FilledButton(T("delete_dlg_confirm"), on_click=self._on_delete_confirm,
                                 style=ft.ButtonStyle(bgcolor=C["danger"], color=C["text_inv"])),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
@@ -109,21 +179,45 @@ class App:
         # switch confirm (when Codex is running)
         self._switch_target = None
         self.switch_dlg = ft.AlertDialog(
-            title=ft.Text("Switch Account", size=18, weight="w700"),
+            title=ft.Text(T("switch_dlg_title"), size=18, weight="w700"),
             content=ft.Column([
-                ft.Text(
-                    "Codex is currently running. Switching accounts will stop all "
-                    "Codex processes before proceeding.",
-                    size=13, color=C["text_muted"],
-                ),
-                ft.Text(
-                    "Are you sure you want to continue?",
-                    size=13, weight="w600", color=C["text"],
-                ),
+                ft.Text(T("switch_dlg_desc"), size=13, color=C["text_muted"]),
+                ft.Text(T("switch_dlg_confirm_ask"), size=13, weight="w600", color=C["text"]),
             ], spacing=10),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog()),
-                ft.FilledButton("Switch Anyway", on_click=self._on_switch_confirm,
+                ft.TextButton(T("switch_dlg_cancel"), on_click=lambda e: self.page.pop_dialog()),
+                ft.FilledButton(T("switch_dlg_confirm"), on_click=self._on_switch_confirm,
+                                style=ft.ButtonStyle(bgcolor=C["accent"], color=C["text_inv"])),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            shape=ft.RoundedRectangleBorder(radius=16),
+        )
+
+        # logout confirm (Add New Account when Codex is running)
+        self._logout_pending = False
+        self.logout_codex_dlg = ft.AlertDialog(
+            title=ft.Text(T("logout_dlg_title"), size=18, weight="w700"),
+            content=ft.Column([
+                ft.Text(T("logout_dlg_desc"), size=13, color=C["text_muted"]),
+                ft.Text(T("logout_dlg_codex"), size=13, color=C["text_muted"]),
+                ft.Text(T("switch_dlg_confirm_ask"), size=13, weight="w600", color=C["text"]),
+            ], spacing=10),
+            actions=[
+                ft.TextButton(T("logout_dlg_cancel"), on_click=lambda e: self.page.pop_dialog()),
+                ft.FilledButton(T("logout_dlg_confirm"), on_click=self._on_logout_confirm,
+                                style=ft.ButtonStyle(bgcolor=C["accent"], color=C["text_inv"])),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            shape=ft.RoundedRectangleBorder(radius=16),
+        )
+
+        # simple logout confirm (no Codex running)
+        self.logout_dlg = ft.AlertDialog(
+            title=ft.Text(T("logout_dlg_title"), size=18, weight="w700"),
+            content=ft.Text(T("logout_dlg_desc"), size=13, color=C["text_muted"]),
+            actions=[
+                ft.TextButton(T("logout_dlg_cancel"), on_click=lambda e: self.page.pop_dialog()),
+                ft.FilledButton(T("logout_dlg_confirm"), on_click=self._on_logout_confirm,
                                 style=ft.ButtonStyle(bgcolor=C["accent"], color=C["text_inv"])),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
@@ -132,7 +226,6 @@ class App:
 
     # -- build static UI ----------------------------------------------------
     def _build_layout(self):
-        # header
         header = ft.Row([
             ft.Container(
                 content=ft.Text("C", size=18, weight="w700", color=C["text_inv"], text_align="center"),
@@ -140,12 +233,11 @@ class App:
                 alignment=ft.alignment.Alignment.CENTER,
             ),
             ft.Column([
-                ft.Text("Codex Account Switcher", size=18, weight="w700", color=C["text"]),
-                ft.Text("Manage and switch between accounts", size=11, color=C["text_muted"]),
+                ft.Text(T("title"), size=18, weight="w700", color=C["text"]),
+                ft.Text(T("subtitle"), size=11, color=C["text_muted"]),
             ], spacing=2),
         ], spacing=12)
 
-        # current account card
         self.current_card = ft.Container(
             content=ft.Row([
                 self.current_avatar,
@@ -154,7 +246,7 @@ class App:
                     self.current_profile_txt,
                 ], spacing=2, expand=True),
                 ft.FilledButton(
-                    "Save", icon=ft.Icons.SAVE_OUTLINED,
+                    T("save_btn"), icon=ft.Icons.SAVE_OUTLINED,
                     on_click=self._on_save,
                     style=ft.ButtonStyle(
                         bgcolor=C["accent"], color=C["text_inv"],
@@ -167,20 +259,18 @@ class App:
             padding=16, border_radius=16, bgcolor=C["card_dark"], visible=False,
         )
 
-        # add account button
         self.add_btn = ft.Container(
             content=ft.Row([
                 ft.Icon(ft.Icons.ADD_CIRCLE, size=16, color=C["text_sec"]),
-                ft.Text("Add New Account", size=12, weight="w500", color=C["text_sec"]),
+                ft.Text(T("add_account"), size=12, weight="w500", color=C["text_sec"]),
             ], spacing=6, alignment=ft.MainAxisAlignment.CENTER),
             height=40, border_radius=12, bgcolor=C["card_light"],
             alignment=ft.alignment.Alignment.CENTER,
             on_click=self._on_add_account, visible=False,
         )
 
-        # footer
         footer = ft.Row([
-            ft.Text("CLI:", size=10, color=C["text_muted"]),
+            ft.Text(T("cli_label"), size=10, color=C["text_muted"]),
             ft.Text("codex-switch", size=10, color=C["text_muted"]),
             ft.Text("·", size=10, color=C["text_muted"]),
             ft.GestureDetector(
@@ -194,10 +284,10 @@ class App:
                 content=ft.Column([
                     header,
                     ft.Divider(height=4, color=ft.Colors.TRANSPARENT),
-                    ft.Text("Current Account", size=11, weight="w600", color=C["text_muted"]),
+                    ft.Text(T("current_account"), size=11, weight="w600", color=C["text_muted"]),
                     self.current_card,
                     ft.Divider(height=8, color=ft.Colors.TRANSPARENT),
-                    ft.Text("Saved Profiles", size=11, weight="w600", color=C["text_muted"]),
+                    ft.Text(T("saved_profiles"), size=11, weight="w600", color=C["text_muted"]),
                     self.profiles_col,
                     self.add_btn,
                     ft.Divider(height=8, color=ft.Colors.TRANSPARENT),
@@ -215,11 +305,11 @@ class App:
 
         if email and email != "unknown":
             self.current_email_txt.value = email
-            self.current_profile_txt.value = f"Saved as: {prof}" if prof else "Not saved yet"
+            self.current_profile_txt.value = T("saved_as", name=prof) if prof else T("not_saved")
             self.current_avatar.content.value = email[0].upper()
         else:
-            self.current_email_txt.value = "Not logged in"
-            self.current_profile_txt.value = "Run 'codex login' to sign in"
+            self.current_email_txt.value = T("not_logged_in")
+            self.current_profile_txt.value = T("login_hint")
             self.current_avatar.content.value = "?"
         self.current_avatar.content.update()
         self.current_email_txt.update()
@@ -227,7 +317,6 @@ class App:
         self.current_card.visible = True
         self.current_card.update()
 
-        # profiles
         self.profiles_col.controls.clear()
         for name, em in list_profiles():
             is_cur = (em == self._current_email)
@@ -250,13 +339,13 @@ class App:
                 ft.IconButton(
                     icon=ft.Icons.ARROW_FORWARD_IOS,
                     icon_size=14, icon_color=C["accent"],
-                    tooltip="Switch to this account",
+                    tooltip=T("switch_tooltip"),
                     on_click=lambda e, n=name: self._on_switch(n),
                 ),
                 ft.IconButton(
                     icon=ft.Icons.CLOSE,
                     icon_size=12, icon_color=C["text_muted"],
-                    tooltip="Delete profile",
+                    tooltip=T("delete_tooltip"),
                     on_click=lambda e, n=name: self._on_delete_ask(n),
                 ),
             ], spacing=10, alignment=ft.MainAxisAlignment.CENTER),
@@ -267,8 +356,13 @@ class App:
     # -- event handlers -----------------------------------------------------
     def _on_save(self, e):
         if not self._current_email or self._current_email == "unknown":
-            self._snack("No account to save. Run 'codex login' first.", C["danger"])
+            self._snack(T("snack_no_account"), C["danger"])
             return
+        # Check for duplicate
+        for name, em in list_profiles():
+            if em == self._current_email:
+                self._snack(T("snack_duplicate", name=name), C["danger"])
+                return
         self.save_field.value = self._current_email
         self.page.show_dialog(self.save_dlg)
 
@@ -276,11 +370,11 @@ class App:
         name = self.save_field.value.strip() or self._current_email
         try:
             save_profile(name)
-            self.page.pop_dialog(self.save_dlg)
-            self._snack(f"Profile '{name}' saved.")
+            self.page.pop_dialog()
+            self._snack(T("snack_saved", name=name))
             self.refresh()
         except Exception as ex:
-            self._snack(f"Error: {ex}", C["danger"])
+            self._snack(T("snack_error", msg=str(ex)), C["danger"])
 
     def _on_switch(self, name):
         if is_codex_running():
@@ -292,10 +386,10 @@ class App:
     def _do_switch(self, name):
         try:
             new_email = switch_profile(name)
-            self._snack(f"Switched to {new_email}")
+            self._snack(T("snack_switched", email=new_email))
             self.refresh()
         except Exception as ex:
-            self._snack(f"Error: {ex}", C["danger"])
+            self._snack(T("snack_error", msg=str(ex)), C["danger"])
 
     def _on_switch_confirm(self, e):
         self.page.pop_dialog()
@@ -311,19 +405,26 @@ class App:
         if name:
             try:
                 delete_profile(name)
-                self.page.pop_dialog(self.del_dlg)
-                self._snack(f"Profile '{name}' deleted.")
+                self.page.pop_dialog()
+                self._snack(T("snack_deleted", name=name))
                 self.refresh()
             except Exception as ex:
-                self._snack(f"Error: {ex}", C["danger"])
+                self._snack(T("snack_error", msg=str(ex)), C["danger"])
 
     def _on_add_account(self, e):
+        if is_codex_running():
+            self.page.show_dialog(self.logout_codex_dlg)
+        else:
+            self.page.show_dialog(self.logout_dlg)
+
+    def _on_logout_confirm(self, e):
+        self.page.pop_dialog()
         try:
             logout()
-            self._snack("Logged out. Run 'codex login' to sign in with a new account.")
+            self._snack(T("snack_logged_out"))
             self.refresh()
         except Exception as ex:
-            self._snack(f"Error: {ex}", C["danger"])
+            self._snack(T("snack_error", msg=str(ex)), C["danger"])
 
     def _snack(self, msg, bgcolor=None):
         self.page.show_dialog(ft.SnackBar(ft.Text(msg), bgcolor=bgcolor or C["accent"]))
