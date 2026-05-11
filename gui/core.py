@@ -158,8 +158,13 @@ def list_profiles():
     for p in sorted(PROFILES_DIR.iterdir()):
         if p.name.startswith("_auto_"):
             continue
-        em, _ = get_account_info(p)
-        result.append((p.name, em or "unknown"))
+        if not p.is_dir():
+            continue
+        try:
+            em, _ = get_account_info(p)
+            result.append((p.name, em or "unknown"))
+        except Exception:
+            result.append((p.name, "unknown"))
     return result
 
 
@@ -192,10 +197,13 @@ def switch_profile(name: str) -> str:
 
     # auto-save current
     if CODEX_DIR.exists():
-        email, _ = get_account_info()
-        if email and email != "unknown":
-            auto_name = f"_auto_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            copy_codex_tree(CODEX_DIR, PROFILES_DIR / auto_name)
+        try:
+            email, _ = get_account_info()
+            if email and email != "unknown":
+                auto_name = f"_auto_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                copy_codex_tree(CODEX_DIR, PROFILES_DIR / auto_name)
+        except Exception:
+            pass  # auto-save failure should not block switching
 
     copy_codex_tree(src, CODEX_DIR)
 

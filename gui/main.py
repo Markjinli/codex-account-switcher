@@ -3,6 +3,7 @@
 
 import sys
 import locale
+import traceback
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -300,6 +301,14 @@ class App:
 
     # -- refresh ------------------------------------------------------------
     def refresh(self):
+        try:
+            self._refresh_impl()
+        except Exception as ex:
+            tb = traceback.format_exc()
+            print(tb, file=sys.stderr)
+            self._snack(T("snack_error", msg=f"{ex}\n\n{tb[-500:]}"), C["danger"])
+
+    def _refresh_impl(self):
         email, aid, prof = get_current()
         self._current_email = email or ""
 
@@ -386,9 +395,11 @@ class App:
     def _do_switch(self, name):
         try:
             new_email = switch_profile(name)
-            self._snack(T("snack_switched", email=new_email))
+            self._snack(T("snack_switched", email=new_email or "unknown"))
             self.refresh()
         except Exception as ex:
+            tb = traceback.format_exc()
+            print(tb, file=sys.stderr)
             self._snack(T("snack_error", msg=str(ex)), C["danger"])
 
     def _on_switch_confirm(self, e):
@@ -431,4 +442,9 @@ class App:
 
 
 if __name__ == "__main__":
-    ft.run(lambda page: App(page))
+    def _create_app(page: ft.Page):
+        try:
+            return App(page)
+        except Exception as _ex:
+            traceback.print_exc(file=sys.stderr)
+    ft.run(_create_app)
