@@ -106,6 +106,21 @@ When switching: backs up current `~/.codex` → replaces it with the target prof
 
 ---
 
+## 存档位置 / Storage Location
+
+保存的账号 profiles 存放在 `profiles/` 目录下，每个 profile 是一个完整的 `.codex` 副本（含认证 token，请勿分享）：
+
+| 系统 | 路径 |
+|------|------|
+| **Windows** | `C:\Users\<用户名>\.codex-switcher\profiles\` |
+| **macOS** | `/Users/<用户名>/.codex-switcher/profiles/` 或 `~/.codex-switcher/profiles/` |
+
+每个子文件夹就是一个已保存的账号（`personal/`、`work/` 等），包含该账号的完整认证和配置数据。
+
+Saved profiles are stored as complete `.codex` copies under `profiles/`. Each subfolder is a saved account containing full auth credentials — do not share.
+
+---
+
 ## 注意事项 / Notes
 
 - **切换前工具会自动停止 Codex 进程**，无需手动退出
