@@ -96,18 +96,16 @@ def kill_codex():
         pass
 
 
-def _remove_readonly(fn, path, excinfo):
-    try:
-        os.chmod(path, stat.S_IWRITE)
-        fn(path)
-    except Exception:
-        pass
-
-
 def rmtree_force(path: Path):
     if not path.exists():
         return
-    shutil.rmtree(str(path), onerror=_remove_readonly, ignore_errors=True)
+    for root, dirs, files in os.walk(str(path)):
+        for name in files + dirs:
+            try:
+                os.chmod(os.path.join(root, name), stat.S_IWRITE | stat.S_IREAD)
+            except Exception:
+                pass
+    shutil.rmtree(str(path), ignore_errors=True)
 
 
 def copy_codex_tree(src: Path, dst: Path):
